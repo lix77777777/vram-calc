@@ -1,0 +1,30 @@
+name: "📏 Validation report / 实测报告"
+description: "Submit your GPU measurements — this is how the formulas get better / 提交你的实测数据，公式靠这个变准"
+title: "[validation] <GPU> <model> <scenario>"
+labels: ["validation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Run the scripts in `validation/` (see `validation/README.md`), then paste results here.
+        运行 `validation/` 下的脚本后把结果贴进来。误差 ≤10% 也欢迎提交——会进 README 的社区验证矩阵。
+  - type: input
+    id: env
+    attributes:
+      label: "Environment / 环境"
+      placeholder: "RTX 4090, torch 2.7.1+cu128, transformers 4.55.0, Windows 11"
+    validations:
+      required: true
+  - type: textarea
+    id: json
+    attributes:
+      label: "validation/results/*.json"
+      description: "Paste the JSON file(s) produced by the experiment scripts / 直接粘贴实验脚本生成的 JSON"
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: "analyze.py output (optional) / 对照表（可选）"
+      render: markdown

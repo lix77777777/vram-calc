@@ -190,6 +190,41 @@ def framework_overhead(subtotal: float, base: float = 0.75 * GiB,
     return base + fraction * subtotal
 
 
+# ------------------------------------------------- GGUF (llama.cpp / Ollama)
+# 平均 bit/权重(整文件口径, 已含块内 scale 与高位宽层的混合), 取自 llama.cpp
+# 文档与社区整理的近似值〔待验证-10: 未上卡实测, 与官方 GGUF 文件大小对照偏差 ~1-3%〕
+GGUF_BPW = {
+    "Q2_K": 2.63, "Q3_K_M": 3.91, "Q4_0": 4.55, "Q4_K_S": 4.58,
+    "Q4_K_M": 4.85, "Q5_K_M": 5.69, "Q6_K": 6.59, "Q8_0": 8.50, "F16": 16.0,
+}
+GGUF_GRAPH_BASE = 0.40 * GiB   # llama.cpp 计算图/上下文缓冲经验值〔待验证-10〕
+
+
+def gguf_weights_memory(cfg: ModelConfig, quant: str = "Q4_K_M") -> float:
+    """GGUF 权重显存 = P × bpw / 8（全量 offload 到 GPU 时 ≈ 文件大小）.
+
+    sanity: Llama-3-8B Q4_K_M 估 4.53 GiB vs 官方文件 ≈4.58 GiB (-1%).
+    """
+    if quant not in GGUF_BPW:
+        raise ValueError(f"unknown gguf quant {quant!r}; available: {sorted(GGUF_BPW)}")
+    return cfg.num_params * GGUF_BPW[quant] / 8.0
+
+
+def estimate_gguf(cfg: ModelConfig, *, quant: str = "Q4_K_M",
+                  ctx: int = 4096, batch: int = 1,
+                  kv_precision: Precision = Precision.FP16) -> MemoryBreakdown:
+    """llama.cpp / Ollama 全量 GPU offload 推理估算〔整条路径待实测, 见 formulas.md §8-10〕.
+
+    = 权重(bpw) + KV-Cache(缺省 f16) + 计算图缓冲(经验)
+    注意: 与 HF transformers 路径不同, llama.cpp 无 CUDA context 之外的大头开销,
+    这里不再乘碎片系数.
+    """
+    w = gguf_weights_memory(cfg, quant)
+    kv = kv_cache_memory(cfg, batch, ctx, kv_precision) + (KV_BUFFER if batch and ctx else 0.0)
+    graph = GGUF_GRAPH_BASE + 0.05 * kv   # 随上下文小幅增长, 经验项
+    return MemoryBreakdown(weights=w, kv_cache=kv, overhead=graph)
+
+
 # ---------------------------------------------------------------- §7 汇总
 @dataclass(frozen=True)
 class MemoryBreakdown:

@@ -12,7 +12,8 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from vram_calc import MODELS, Precision, estimate_inference, estimate_training  # noqa: E402
+from vram_calc import (MODELS, Precision, estimate_gguf,  # noqa: E402
+                       estimate_inference, estimate_training)
 
 cases = []
 models = ["llama-2-7b", "llama-3-8b", "qwen2.5-0.5b", "qwen2.5-7b", "tinyllama-1.1b"]
@@ -36,6 +37,12 @@ for name, mode, mp, attn, ckpt in itertools.product(
     cases.append({"kind": "training", "model": name, "mode": mode,
                   "mixed_precision": mp, "attn_impl": attn, "ckpt": ckpt,
                   "batch": 2, "seq": 1024, "lora_rank": 16, "expect": bd.as_dict()})
+
+# GGUF
+for name, quant, ctx in itertools.product(models, ["Q4_K_M", "Q8_0", "Q2_K"], [2048, 16384]):
+    bd = estimate_gguf(MODELS[name], quant=quant, ctx=ctx)
+    cases.append({"kind": "gguf", "model": name, "quant": quant,
+                  "ctx": ctx, "expect": bd.as_dict()})
 
 out = ROOT / "web" / "test_cases.json"
 out.parent.mkdir(exist_ok=True)

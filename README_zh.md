@@ -10,6 +10,8 @@
 
 [English README](README.md)
 
+![demo](docs/demo.gif)
+
 ## 为什么又造一个显存计算器？
 
 别的计算器靠猜，这个靠测。本项目每条公式都和 `torch.cuda` 实测对过账——
@@ -61,6 +63,21 @@ print(f"{bd.total / GiB:.1f} GiB")
 
 另加激活值 `L·s·B·h·(31 + 8f/h [+6as/h 若 eager]) + 3·B·s·V` 和
 KV-Cache `2·L·n_kv·d_head·s·B·b`，详见 [docs/formulas.md](docs/formulas.md) §4–5。
+
+## GGUF / Ollama（0.3 新增）
+
+`estimate_gguf(model, quant="Q4_K_M", ctx=8192)` 估算 llama.cpp/Ollama 路径的显存
+（按量化档位 bpw 算权重 + KV-Cache + 计算图缓冲）。权重项与官方 GGUF 文件大小
+偏差约 1%；其余项**尚未上卡实测**——见下方验证矩阵，欢迎补充实测。
+
+## 社区验证矩阵
+
+| GPU | 环境 | 场景 | 最大误差 | 提交者 |
+|---|---|---|---|---|
+| RTX 5060 Ti 16GB | torch 2.7 / transformers 4.55 | 推理、全量、LoRA、QLoRA、ckpt、sdpa（30 项） | 4.0% | 作者 |
+
+加入你的一行：在你的卡上跑 `validation/`，然后提交
+[实测报告 issue](../../issues/new?template=validation-report.yml)。
 
 ## 项目结构
 

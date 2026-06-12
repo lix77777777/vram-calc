@@ -11,6 +11,8 @@
 
 [中文 README](README_zh.md)
 
+![demo](docs/demo.gif)
+
 ## Why another VRAM calculator?
 
 Most calculators guess. We measured. Every formula in this project was tested
@@ -63,6 +65,22 @@ Zero runtime dependencies (torch is only used by validation scripts).
 
 Plus activations `L·s·B·h·(31 + 8f/h [+ 6as/h if eager]) + 3·B·s·V` and
 KV-cache `2·L·n_kv·d_head·s·B·b` — see [docs/formulas.md](docs/formulas.md) §4–5.
+
+## GGUF / Ollama (new in 0.3)
+
+`estimate_gguf(model, quant="Q4_K_M", ctx=8192)` estimates llama.cpp/Ollama VRAM
+(weights from per-quant bits-per-weight + KV-cache + graph buffer). Weight term
+matches official GGUF file sizes within ~1%; the rest is **not yet GPU-validated**
+— see the validation matrix below and help us measure it.
+
+## Community validation matrix
+
+| GPU | Stack | Scenarios | Max error | By |
+|---|---|---|---|---|
+| RTX 5060 Ti 16GB | torch 2.7 / transformers 4.55 | inference, full FT, LoRA, QLoRA, ckpt, sdpa (30 checks) | 4.0% | author |
+
+Add your row: run `validation/` on your GPU and open a
+[validation report](../../issues/new?template=validation-report.yml).
 
 ## What's inside
 

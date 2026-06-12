@@ -15,6 +15,11 @@
   const LORA_ACT_OVERHEAD = 0.13;
   const KV_BUFFER = 10 * MiB;
 
+  // GGUF (llama.cpp/Ollama) 平均 bit/权重〔待验证-10〕
+  const GGUF_BPW = { Q2_K: 2.63, Q3_K_M: 3.91, Q4_0: 4.55, Q4_K_S: 4.58,
+                     Q4_K_M: 4.85, Q5_K_M: 5.69, Q6_K: 6.59, Q8_0: 8.50, F16: 16.0 };
+  const GGUF_GRAPH_BASE = 0.40 * GiB;
+
   // 预置模型 (字段同 models.py, 来源 HF config.json 2026-06-10)
   const MODELS = {
     "llama-2-7b":      { h: 4096, L: 32, a: 32, kv: 32, f: 11008, V: 32000,  tie: false, qkvBias: false, hd: null },
@@ -155,6 +160,18 @@
     return breakdown(w, 0.0, 0.0, act, kvc, oh);
   }
 
+  function ggufWeightsMemory(m, quant = "Q4_K_M") {
+    if (!(quant in GGUF_BPW)) throw new Error("unknown gguf quant " + quant);
+    return numParams(m) * GGUF_BPW[quant] / 8.0;
+  }
+
+  function estimateGguf(m, { quant = "Q4_K_M", ctx = 4096, batch = 1 } = {}) {
+    const w = ggufWeightsMemory(m, quant);
+    const kv = kvCacheMemory(m, batch, ctx, "fp16") + (batch && ctx ? KV_BUFFER : 0.0);
+    const graph = GGUF_GRAPH_BASE + 0.05 * kv;
+    return breakdown(w, 0.0, 0.0, 0.0, kv, graph);
+  }
+
   function recommend(requiredBytes, headroom = 0.0) {
     const need = requiredBytes * (1.0 + headroom) / GiB;
     return Object.entries(GPU_VRAM)
@@ -165,7 +182,8 @@
   const VC = { GiB, MODELS, GPU_VRAM, numParams, loraNumParams, weightsMemory,
                qloraWeightsMemory, gradientsMemory, optimizerMemory,
                activationsMemory, inferenceActivationsMemory, kvCacheMemory,
-               frameworkOverhead, estimateTraining, estimateInference, recommend };
+               frameworkOverhead, estimateTraining, estimateInference, recommend,
+               GGUF_BPW, ggufWeightsMemory, estimateGguf };
 
   if (typeof module !== "undefined" && module.exports) module.exports = VC;
   else root.VC = VC;

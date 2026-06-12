@@ -20,11 +20,14 @@ from .memory import (
     framework_overhead,
     estimate_training,
     estimate_inference,
+    gguf_weights_memory,
+    estimate_gguf,
+    GGUF_BPW,
 )
 from .models import MODELS, ModelConfig, get_model
 from .recommend import GPU_VRAM, recommend
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "GiB", "Precision", "MemoryBreakdown", "NF4_DQ_EXTRA_BITS",
@@ -32,6 +35,7 @@ __all__ = [
     "gradients_memory", "optimizer_memory", "activations_memory",
     "inference_activations_memory", "kv_cache_memory", "framework_overhead",
     "estimate_training", "estimate_inference",
+    "gguf_weights_memory", "estimate_gguf", "GGUF_BPW",
     "MODELS", "ModelConfig", "get_model", "GPU_VRAM", "recommend",
     "__version__",
 ]

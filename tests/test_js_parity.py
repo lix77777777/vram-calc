@@ -18,11 +18,13 @@ const VC = require(process.argv[1] + "/web/vram_calc.js");
 const cases = require(process.argv[1] + "/web/test_cases.json");
 const out = cases.map(c => {
   const m = VC.MODELS[c.model];
-  return c.kind === "inference"
-    ? VC.estimateInference(m, { precision: c.precision, batch: c.batch, seq: c.seq })
-    : VC.estimateTraining(m, { mode: c.mode, mixedPrecision: c.mixed_precision,
-        batch: c.batch, seq: c.seq, loraRank: c.lora_rank,
-        attnImpl: c.attn_impl, gradientCheckpointing: c.ckpt });
+  if (c.kind === "inference")
+    return VC.estimateInference(m, { precision: c.precision, batch: c.batch, seq: c.seq });
+  if (c.kind === "gguf")
+    return VC.estimateGguf(m, { quant: c.quant, ctx: c.ctx });
+  return VC.estimateTraining(m, { mode: c.mode, mixedPrecision: c.mixed_precision,
+      batch: c.batch, seq: c.seq, loraRank: c.lora_rank,
+      attnImpl: c.attn_impl, gradientCheckpointing: c.ckpt });
 });
 console.log(JSON.stringify(out));
 """

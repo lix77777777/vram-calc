@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vram-calc"
-version = "0.0.1"
+version = "0.3.0"
 description = "LLM VRAM calculator: weights, gradients, optimizer states, activations, KV-cache breakdown"
 readme = "README.md"
 license = { text = "MIT" }

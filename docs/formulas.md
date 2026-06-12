@@ -157,3 +157,4 @@ M_overhead = C_cuda + 碎片系数 × 小计
 | 7 | MLA 公式 | v1.5 再验 |
 | 8 | CUDA context | 未实测（exp3 待重跑） |
 | 9 | 碎片系数 | ✅ 关闭（1.05~1.11 对 peak） |
+| 10 | GGUF/llama.cpp 路径（bpw 表、计算图缓冲） | 未实测（权重项与官方文件大小对照 -1%；KV/缓冲待 Ollama 实测） |
