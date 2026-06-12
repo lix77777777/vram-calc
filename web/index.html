@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VRAM Calc — 我的显卡能跑这个模型吗？</title>
+<style>
+  :root { --bg:#0f1117; --card:#1a1d27; --line:#2a2e3d; --txt:#e8eaf0; --dim:#9aa0b0;
+          --acc:#5b8cff; --ok:#3fb96f; --warn:#e0a93f; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--txt); font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; padding:16px; }
+  .wrap { max-width:860px; margin:0 auto; }
+  header { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px; margin:8px 0 16px; }
+  h1 { font-size:1.35rem; } .sub { color:var(--dim); font-size:.85rem; }
+  #lang { background:var(--card); color:var(--txt); border:1px solid var(--line); border-radius:8px; padding:4px 10px; cursor:pointer; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:640px){ .grid{ grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  label { display:block; color:var(--dim); font-size:.8rem; margin:8px 0 2px; }
+  select,input { width:100%; background:var(--bg); color:var(--txt); border:1px solid var(--line); border-radius:8px; padding:7px 9px; font-size:.95rem; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  table { width:100%; border-collapse:collapse; font-size:.92rem; }
+  td { padding:5px 4px; border-bottom:1px solid var(--line); }
+  td:last-child { text-align:right; font-variant-numeric:tabular-nums; }
+  .bar { height:8px; border-radius:4px; background:var(--acc); min-width:2px; }
+  .total { font-size:1.5rem; font-weight:700; margin:6px 0; }
+  .gpus span { display:inline-block; background:var(--bg); border:1px solid var(--ok); color:var(--ok);
+               border-radius:999px; padding:2px 10px; margin:3px 4px 0 0; font-size:.82rem; }
+  .nofit { color:var(--warn); }
+  footer { color:var(--dim); font-size:.78rem; margin-top:16px; }
+  footer a { color:var(--acc); }
+  .hide { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1 id="t_title"></h1><div class="sub" id="t_sub"></div></div>
+  <button id="lang"></button>
+</header>
+
+<div class="grid">
+  <div class="card">
+    <label id="t_model"></label>
+    <select id="model"></select>
+    <label id="t_kind"></label>
+    <select id="kind">
+      <option value="inference"></option><option value="full"></option>
+      <option value="lora"></option><option value="qlora"></option>
+    </select>
+    <div id="inf_opts">
+      <label id="t_prec"></label>
+      <select id="prec"><option>fp16</option><option>bf16</option><option>int8</option><option>int4</option></select>
+    </div>
+    <div id="train_opts" class="hide">
+      <label id="t_mp"></label>
+      <select id="mp"><option value="bf16_pure"></option><option value="megatron"></option><option value="amp"></option></select>
+      <label id="t_attn"></label>
+      <select id="attn"><option value="sdpa">sdpa / FlashAttention</option><option value="eager">eager</option></select>
+      <label><input type="checkbox" id="ckpt" style="width:auto"> <span id="t_ckpt"></span></label>
+      <div id="lora_opts" class="hide"><label>LoRA rank</label><input type="number" id="rank" value="16" min="1" max="256"></div>
+    </div>
+    <div class="row2">
+      <div><label>batch</label><input type="number" id="batch" value="1" min="0"></div>
+      <div><label id="t_seq"></label><input type="number" id="seq" value="2048" min="0" step="512"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sub" id="t_total_label"></div>
+    <div class="total" id="total"></div>
+    <table id="breakdown"></table>
+    <div class="sub" style="margin-top:10px" id="t_gpu_label"></div>
+    <div class="gpus" id="gpus"></div>
+  </div>
+</div>
+
+<footer id="t_foot"></footer>
+</div>
+
+<script src="vram_calc.js"></script>
+<script>
+const I18N = {
+  zh: { title:"LLM 显存计算器", sub:"权重 / 梯度 / 优化器 / 激活值 / KV-Cache 五大块拆解 · 公式经真实 GPU 实测校准",
+        model:"模型", kind:"场景", prec:"精度", mp:"混合精度记账", attn:"注意力实现",
+        ckpt:"gradient checkpointing", seq:"序列长度",
+        kinds:["推理","全量微调","LoRA 微调","QLoRA 微调"],
+        mps:["纯 BF16（裸 torch）","Megatron/DeepSpeed 式","AMP 式（参数 FP32）"],
+        total_label:"预计显存占用", gpu_label:"能跑的显卡（按显存升序）",
+        nofit:"没有单卡能放下——需要多卡/分布式（v2 支持）",
+        keys:{weights:"权重",gradients:"梯度",optimizer:"优化器状态",activations:"激活值",kv_cache:"KV-Cache",overhead:"框架开销"},
+        foot:'公式推导与实测报告见 <a href="https://github.com/lix77777777/vram-calc">GitHub 仓库</a> docs/ · 误差目标 ≤10%，标定于 RTX 5060 Ti + transformers 4.55 · MIT License' },
+  en: { title:"LLM VRAM Calculator", sub:"Weights / gradients / optimizer / activations / KV-cache breakdown · formulas calibrated on real GPUs",
+        model:"Model", kind:"Scenario", prec:"Precision", mp:"Mixed-precision scheme", attn:"Attention impl",
+        ckpt:"gradient checkpointing", seq:"Sequence length",
+        kinds:["Inference","Full fine-tune","LoRA","QLoRA"],
+        mps:["Pure BF16 (plain torch)","Megatron/DeepSpeed style","AMP style (FP32 params)"],
+        total_label:"Estimated VRAM", gpu_label:"GPUs that fit (ascending)",
+        nofit:"No single GPU fits — needs multi-GPU (planned for v2)",
+        keys:{weights:"Weights",gradients:"Gradients",optimizer:"Optimizer",activations:"Activations",kv_cache:"KV-Cache",overhead:"Framework overhead"},
+        foot:'Formula derivations & validation report in <a href="https://github.com/lix77777777/vram-calc">the repo</a> docs/ · target error ≤10%, calibrated on RTX 5060 Ti + transformers 4.55 · MIT License' },
+};
+let lang = navigator.language.startsWith("zh") ? "zh" : "en";
+
+const $ = (id) => document.getElementById(id);
+for (const name of Object.keys(VC.MODELS)) {
+  const o = document.createElement("option"); o.textContent = name; $("model").append(o);
+}
+
+function applyLang() {
+  const t = I18N[lang];
+  $("lang").textContent = lang === "zh" ? "EN" : "中文";
+  $("t_title").textContent = t.title; $("t_sub").textContent = t.sub;
+  $("t_model").textContent = t.model; $("t_kind").textContent = t.kind;
+  $("t_prec").textContent = t.prec; $("t_mp").textContent = t.mp;
+  $("t_attn").textContent = t.attn; $("t_ckpt").textContent = t.ckpt;
+  $("t_seq").textContent = t.seq; $("t_total_label").textContent = t.total_label;
+  $("t_gpu_label").textContent = t.gpu_label; $("t_foot").innerHTML = t.foot;
+  [...$("kind").options].forEach((o, i) => o.textContent = t.kinds[i]);
+  [...$("mp").options].forEach((o, i) => o.textContent = t.mps[i]);
+  document.documentElement.lang = lang;
+}
+
+function calc() {
+  const t = I18N[lang];
+  const m = VC.MODELS[$("model").value];
+  const kind = $("kind").value;
+  const batch = Math.max(0, +$("batch").value || 0);
+  const seq = Math.max(0, +$("seq").value || 0);
+  $("inf_opts").classList.toggle("hide", kind !== "inference");
+  $("train_opts").classList.toggle("hide", kind === "inference");
+  $("lora_opts").classList.toggle("hide", kind === "inference" || kind === "full");
+
+  const bd = kind === "inference"
+    ? VC.estimateInference(m, { precision: $("prec").value, batch, seq })
+    : VC.estimateTraining(m, { mode: kind, mixedPrecision: $("mp").value,
+        batch, seq, loraRank: Math.max(1, +$("rank").value || 16),
+        attnImpl: $("attn").value, gradientCheckpointing: $("ckpt").checked });
+
+  $("total").textContent = (bd.total / VC.GiB).toFixed(2) + " GiB";
+  const rows = Object.entries(t.keys)
+    .map(([k, label]) => [label, bd[k]]).filter(([, v]) => v > 0);
+  const max = Math.max(...rows.map(([, v]) => v), 1);
+  $("breakdown").innerHTML = rows.map(([label, v]) =>
+    `<tr><td style="width:30%">${label}</td>
+     <td><div class="bar" style="width:${(100 * v / max).toFixed(1)}%"></div></td>
+     <td>${(v / VC.GiB).toFixed(2)} GiB</td></tr>`).join("");
+
+  const fits = VC.recommend(bd.total);
+  $("gpus").innerHTML = fits.length
+    ? fits.map(n => `<span>${n} · ${VC.GPU_VRAM[n]}G</span>`).join("")
+    : `<span class="nofit">${t.nofit}</span>`;
+}
+
+$("lang").onclick = () => { lang = lang === "zh" ? "en" : "zh"; applyLang(); calc(); };
+document.querySelectorAll("select,input").forEach(el => el.oninput = calc);
+applyLang(); calc();
+</script>
+</body>
+</html>

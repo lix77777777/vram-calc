@@ -1,0 +1,39 @@
+{
+  "experiment": "exp2_qwen2.5-0.5b_full_attn-sdpa_b2_s1024_acc1",
+  "timestamp": "2026-06-10 20:39:52",
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 5060 Ti",
+    "total_vram": 17102864384,
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8"
+  },
+  "preset": "qwen2.5-0.5b",
+  "mode": "full",
+  "attn": "sdpa",
+  "ckpt": false,
+  "batch": 2,
+  "seq": 1024,
+  "accum": 1,
+  "lora_rank": 16,
+  "weights_measured": 996321792,
+  "grad_dtype": "torch.bfloat16",
+  "trainable_params": 494032768,
+  "steps": [
+    {
+      "step": 0,
+      "activations": 4991640576,
+      "grad_plus_state_delta": 2000244736,
+      "allocated": 4692009984,
+      "reserved": 8743026688,
+      "peak": 8479379456
+    },
+    {
+      "step": 1,
+      "activations": 4319207936,
+      "grad_plus_state_delta": 0,
+      "allocated": 4692009984,
+      "reserved": 12434014208,
+      "peak": 11502618624
+    }
+  ]
+}

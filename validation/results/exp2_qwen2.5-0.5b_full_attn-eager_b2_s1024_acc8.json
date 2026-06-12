@@ -1,0 +1,87 @@
+{
+  "experiment": "exp2_qwen2.5-0.5b_full_attn-eager_b2_s1024_acc8",
+  "timestamp": "2026-06-10 20:40:00",
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 5060 Ti",
+    "total_vram": 17102864384,
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8"
+  },
+  "preset": "qwen2.5-0.5b",
+  "mode": "full",
+  "attn": "eager",
+  "ckpt": false,
+  "batch": 2,
+  "seq": 1024,
+  "accum": 8,
+  "lora_rank": 16,
+  "weights_measured": 996321792,
+  "grad_dtype": "torch.bfloat16",
+  "trainable_params": 494032768,
+  "steps": [
+    {
+      "step": 0,
+      "activations": 9136006144,
+      "grad_plus_state_delta": 0,
+      "allocated": 2674004992,
+      "reserved": 12786335744,
+      "peak": 12623745024
+    },
+    {
+      "step": 1,
+      "activations": 8478024192,
+      "grad_plus_state_delta": 0,
+      "allocated": 2674004992,
+      "reserved": 14445182976,
+      "peak": 13643429888
+    },
+    {
+      "step": 2,
+      "activations": 8478024192,
+      "grad_plus_state_delta": 0,
+      "allocated": 2674004992,
+      "reserved": 14445182976,
+      "peak": 13643429888
+    },
+    {
+      "step": 3,
+      "activations": 8478024192,
+      "grad_plus_state_delta": 0,
+      "allocated": 2674004992,
+      "reserved": 14445182976,
+      "peak": 13643429888
+    },
+    {
+      "step": 4,
+      "activations": 8478024192,
+      "grad_plus_state_delta": 0,
+      "allocated": 2674004992,
+      "reserved": 14445182976,
+      "peak": 13643429888
+    },
+    {
+      "step": 5,
+      "activations": 8478024192,
+      "grad_plus_state_delta": 0,
+      "allocated": 2674004992,
+      "reserved": 14445182976,
+      "peak": 13643429888
+    },
+    {
+      "step": 6,
+      "activations": 8478024192,
+      "grad_plus_state_delta": 0,
+      "allocated": 2674004992,
+      "reserved": 14445182976,
+      "peak": 13643429888
+    },
+    {
+      "step": 7,
+      "activations": 8478024192,
+      "grad_plus_state_delta": 1980944384,
+      "allocated": 4654949376,
+      "reserved": 14451474432,
+      "peak": 13643429888
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+.venv/
+.DS_Store
+
+# --- 私人/协作文件，不公开 ---
+PROJECT_BRIEF.md
+PROGRESS.md
+ruanzhu/
+docs/launch_posts.md
+docs/study_guide.md.bak
+validation/LEE_操作手册.md
+pytest-cache-files-*/

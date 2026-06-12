@@ -1,0 +1,18 @@
+{
+  "experiment": "exp1_qwen2.5-1.5b_fp16_b2_s1024",
+  "timestamp": "2026-06-10 20:39:27",
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 5060 Ti",
+    "total_vram": 17102864384,
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8"
+  },
+  "preset": "qwen2.5-1.5b",
+  "dtype": "fp16",
+  "batch": 2,
+  "seq": 1024,
+  "weights_measured": 3088346624,
+  "kv_measured": 68304896,
+  "prefill_peak_workset": 697450496,
+  "num_params_hf": 1543714304
+}
